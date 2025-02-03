@@ -1,42 +1,67 @@
-import { useState } from "react"
-import { toast } from "react-hot-toast"
 
-// ... other imports ...
 
+import { useState } from "react";
+import { toast } from "react-hot-toast";
+
+// Define Property Interface
+interface Property {
+  id: number;
+  name: string;
+  location: string;
+  price: number;
+  // Add any other property fields as needed
+}
+
+// PropertyGrid Component
 const PropertyGrid = ({ properties }: { properties: Property[] }) => {
-  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
-  const [isEditFormOpen, setIsEditFormOpen] = useState(false)
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [isEditFormOpen, setIsEditFormOpen] = useState(false);
 
-  // ... other code ...
-
+  // Handle Click Event to Fetch Property Details
   const handlePropertyClick = async (propertyId: number) => {
     try {
-      // Fetch the full property details before opening the edit form
-      const response = await fetch(`/api/properties/${propertyId}`)
+      const response = await fetch(`/api/properties/${propertyId}`);
       if (!response.ok) {
-        throw new Error("Failed to fetch property details")
+        throw new Error("Failed to fetch property details");
       }
-      const propertyData = await response.json()
-      setSelectedProperty(propertyData)
-      setIsEditFormOpen(true)
+      const propertyData = await response.json();
+      setSelectedProperty(propertyData);
+      setIsEditFormOpen(true);
     } catch (error) {
-      console.error("Error fetching property details:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load property details.",
-        variant: "destructive",
-      })
+      console.error("Error fetching property details:", error);
+      toast.error("Failed to load property details.");
     }
-  }
+  };
 
-  // ... rest of code ...
-}
+  return (
+    <div>
+      <div className="property-grid">
+        {properties.map((property) => (
+          <div
+            key={property.id}
+            className="property-card"
+            onClick={() => handlePropertyClick(property.id)}
+          >
+            <h3>{property.name}</h3>
+            <p>{property.location}</p>
+            <p>${property.price}</p>
+          </div>
+        ))}
+      </div>
 
-// ... other code ...
+      {isEditFormOpen && selectedProperty && (
+        <div className="edit-form">
+          <h2>Edit Property</h2>
+          <p>Property Name: {selectedProperty.name}</p>
+          {/* Add form fields and other components */}
+          <button onClick={() => setIsEditFormOpen(false)}>Close</button>
+        </div>
+      )}
+    </div>
+  );
+};
 
-interface Property {
-  // Define your property interface here
-  id: number
-  // ... other properties ...
-}
+export default PropertyGrid;
+
+
 
