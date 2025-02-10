@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 
@@ -92,3 +94,4 @@ const PropertyGrid = ({ properties }: { properties: Property[] }) => {
 };
 
 export default PropertyGrid;
+    
