@@ -1,6 +1,4 @@
 module.exports = {
-  experimental: {
-    forceSwcTransforms: false,
-  },
+  swcMinify: false, // Disable SWC-based minification
 };
 
