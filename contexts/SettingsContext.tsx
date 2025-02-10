@@ -1,6 +1,4 @@
-import type React from "react"
-import { createContext, useContext, useState, useEffect } from "react"
-// import { settings as defaultSettings } from "../lib/demo-data"
+import React, { createContext, useContext, useState, useEffect } from "react"
 
 interface Settings {
   upiId: string
@@ -18,6 +16,27 @@ interface SettingsContextType {
   updateSettings: (newSettings: Settings) => void
 }
 
+const defaultSettings: Settings = {
+  upiId: "example@upi",
+  interestedFees: [
+    { maxRent: 10000, fee: 25 },
+    { maxRent: 15000, fee: 49 },
+    { maxRent: 20000, fee: 75 },
+    { maxRent: Number.POSITIVE_INFINITY, fee: 99 },
+  ],
+  mediaRequestFees: [
+    { maxRent: 10000, fee: 30 },
+    { maxRent: 15000, fee: 55 },
+    { maxRent: 20000, fee: 80 },
+    { maxRent: Number.POSITIVE_INFINITY, fee: 110 },
+  ],
+  socialLinks: {
+    facebook: "https://facebook.com/rentease",
+    twitter: "https://twitter.com/rentease",
+    instagram: "https://instagram.com/rentease",
+  },
+}
+
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined)
 
 export const useSettings = () => {
@@ -29,42 +48,32 @@ export const useSettings = () => {
 }
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [settings, setSettings] = useState<Settings>({
-    upiId: "example@upi",
-    interestedFees: [
-      { maxRent: 10000, fee: 25 },
-      { maxRent: 15000, fee: 49 },
-      { maxRent: 20000, fee: 75 },
-      { maxRent: Number.POSITIVE_INFINITY, fee: 99 },
-    ],
-    mediaRequestFees: [
-      { maxRent: 10000, fee: 30 },
-      { maxRent: 15000, fee: 55 },
-      { maxRent: 20000, fee: 80 },
-      { maxRent: Number.POSITIVE_INFINITY, fee: 110 },
-    ],
-    socialLinks: {
-      facebook: "https://facebook.com/rentease",
-      twitter: "https://twitter.com/rentease",
-      instagram: "https://instagram.com/rentease",
-    },
-  })
+  const [settings, setSettings] = useState<Settings>(defaultSettings)
 
   useEffect(() => {
-    // In a real application, you would fetch the settings from an API here
-    // For now, we'll use localStorage to persist settings
-    const storedSettings = localStorage.getItem("appSettings")
-    if (storedSettings) {
-      setSettings(JSON.parse(storedSettings))
+    try {
+      const storedSettings = localStorage.getItem("appSettings")
+      if (storedSettings) {
+        setSettings(JSON.parse(storedSettings))
+      }
+    } catch (error) {
+      console.error("Failed to load settings from localStorage:", error)
     }
   }, [])
 
   const updateSettings = (newSettings: Settings) => {
-    setSettings(newSettings)
-    // In a real application, you would also update the backend here
-    localStorage.setItem("appSettings", JSON.stringify(newSettings))
+    try {
+      setSettings(newSettings)
+      localStorage.setItem("appSettings", JSON.stringify(newSettings))
+    } catch (error) {
+      console.error("Failed to save settings to localStorage:", error)
+    }
   }
 
-  return <SettingsContext.Provider value={{ settings, updateSettings }}>{children}</SettingsContext.Provider>
-}
-
+  return (
+    <SettingsContext.Provider value={{ settings, updateSettings }}>
+      {children}
+    </SettingsContext.Provider>
+  )
+        }
+      
