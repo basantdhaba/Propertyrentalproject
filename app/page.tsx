@@ -1,13 +1,15 @@
-import Header from "../components/Header"
-import Hero from "../components/Hero"
-import Footer from "../components/Footer"
-import dynamic from "next/dynamic"
-import { Suspense } from "react"
+"use client";
+
+import Header from "../components/Header";
+import Hero from "../components/Hero";
+import Footer from "../components/Footer";
+import dynamic from "next/dynamic";
+import { Suspense } from "react";
 
 const DynamicPropertyGrid = dynamic(() => import("../components/PropertyGrid"), {
   ssr: false,
   loading: () => <p>Loading properties...</p>,
-})
+});
 
 export default function Home() {
   return (
@@ -35,6 +37,5 @@ export default function Home() {
       </main>
       <Footer />
     </div>
-  )
+  );
 }
-
