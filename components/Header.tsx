@@ -1,48 +1,59 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { Home, User, LogIn, LogOut, Menu, X } from "lucide-react"
-import { isLoggedIn, logout, getUserName } from "@/lib/auth"
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Home, User, LogIn, LogOut, Menu, X } from "lucide-react";
+import { isLoggedIn, logout, getUserName } from "@/lib/auth";
 
 export default function Header() {
-  const [loggedIn, setLoggedIn] = useState(false)
-  const [userName, setUserName] = useState<string | null>(null)
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const router = useRouter()
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [userName, setUserName] = useState<string | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
-    setLoggedIn(isLoggedIn())
-    setUserName(getUserName())
-  }, [])
+    setLoggedIn(isLoggedIn());
+    setUserName(getUserName());
+  }, []);
 
   const handleLogout = () => {
-    logout()
-    setLoggedIn(false)
-    setUserName(null)
-    router.push("/")
-  }
+    logout();
+    setLoggedIn(false);
+    setUserName(null);
+    router.push("/");
+  };
 
   return (
     <header className="bg-primary text-primary-foreground shadow-md">
       <div className="container mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
-          <Link href="/" className="text-xl md:text-2xl font-bold flex items-center">
+          {/* Logo */}
+          <Link
+            href="/"
+            className="text-xl md:text-2xl font-bold flex items-center"
+          >
             <Home className="mr-2 h-5 w-5 md:h-6 md:w-6" />
             RentEase
           </Link>
 
-          {/* Mobile menu button */}
-          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden p-2" aria-label="Toggle menu">
+          {/* Mobile Menu Toggle */}
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="md:hidden p-2"
+            aria-label="Toggle menu"
+          >
             {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
 
-          {/* Desktop navigation */}
+          {/* Desktop Navigation */}
           <nav className="hidden md:block">
             <ul className="flex space-x-4 items-center">
               <li>
-                <Link href="/list-property" className="hover:text-secondary transition-colors">
+                <Link
+                  href="/list-property"
+                  className="hover:text-secondary transition-colors"
+                >
                   List Property
                 </Link>
               </li>
@@ -52,7 +63,10 @@ export default function Header() {
                     <span className="text-secondary">{userName}</span>
                   </li>
                   <li>
-                    <button onClick={handleLogout} className="hover:text-secondary transition-colors flex items-center">
+                    <button
+                      onClick={handleLogout}
+                      className="hover:text-secondary transition-colors flex items-center"
+                    >
                       <LogOut className="mr-1" size={18} />
                       Logout
                     </button>
@@ -61,7 +75,10 @@ export default function Header() {
               ) : (
                 <>
                   <li>
-                    <Link href="/login" className="hover:text-secondary transition-colors flex items-center">
+                    <Link
+                      href="/login"
+                      className="hover:text-secondary transition-colors flex items-center"
+                    >
                       <LogIn className="mr-1" size={18} />
                       Login
                     </Link>
@@ -81,7 +98,7 @@ export default function Header() {
           </nav>
         </div>
 
-        {/* Mobile navigation */}
+        {/* Mobile Navigation */}
         {isMenuOpen && (
           <nav className="md:hidden mt-4 pb-4">
             <ul className="space-y-4">
@@ -102,8 +119,8 @@ export default function Header() {
                   <li>
                     <button
                       onClick={() => {
-                        handleLogout()
-                        setIsMenuOpen(false)
+                        handleLogout();
+                        setIsMenuOpen(false);
                       }}
                       className="w-full text-left hover:text-secondary transition-colors flex items-center py-2"
                     >
@@ -141,6 +158,6 @@ export default function Header() {
         )}
       </div>
     </header>
-  )
-}
-
+  );
+                      }
+          
