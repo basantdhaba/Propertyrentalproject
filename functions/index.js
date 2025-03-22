@@ -1,0 +1,75 @@
+const functions = require("firebase-functions")
+const admin = require("firebase-admin")
+admin.initializeApp()
+
+// Function to set admin role
+exports.setAdminRole = functions.https.onCall(async (data, context) => {
+  // Check if the request is made by an admin
+  if (!context.auth) {
+    throw new functions.https.HttpsError("unauthenticated", "You must be logged in to perform this action")
+  }
+
+  // Get the current user's custom claims
+  const callerUid = context.auth.uid
+  const callerUser = await admin.auth().getUser(callerUid)
+  const callerCustomClaims = callerUser.customClaims || {}
+
+  // Check if the caller is an admin
+  if (!callerCustomClaims.admin) {
+    throw new functions.https.HttpsError("permission-denied", "Only admins can assign admin roles")
+  }
+
+  // Get the email of the user to be made admin
+  const { email } = data
+  if (!email) {
+    throw new functions.https.HttpsError("invalid-argument", "Email is required")
+  }
+
+  try {
+    // Get the user by email
+    const userRecord = await admin.auth().getUserByEmail(email)
+
+    // Set custom claims for the user
+    await admin.auth().setCustomUserClaims(userRecord.uid, { admin: true })
+
+    // Update the user document in Firestore
+    await admin.firestore().collection("users").doc(userRecord.uid).update({
+      role: "admin",
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    })
+
+    return { success: true, message: `Successfully set admin role for ${email}` }
+  } catch (error) {
+    throw new functions.https.HttpsError("internal", error.message)
+  }
+})
+
+// Function to check and set initial admin
+exports.checkAndSetInitialAdmin = functions.auth.user().onCreate(async (user) => {
+  // Check if the user's email is the designated admin email
+  if (user.email === "renteasekol@gmail.com") {
+    try {
+      // Set custom claims for the initial admin
+      await admin.auth().setCustomUserClaims(user.uid, { admin: true })
+
+      // Update or create the user document in Firestore
+      await admin.firestore().collection("users").doc(user.uid).set(
+        {
+          email: user.email,
+          role: "admin",
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      )
+
+      console.log(`Set admin role for initial admin: ${user.email}`)
+      return { success: true }
+    } catch (error) {
+      console.error("Error setting admin role:", error)
+      return { success: false, error: error.message }
+    }
+  }
+  return null
+})
+

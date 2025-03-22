@@ -1,0 +1,98 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isSignedIn() && 
+        (request.auth.token.email == string(get(/databases/$(database)/documents/settings/admin).data.email) || 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
+    
+    function isOwner(resourceData) {
+      return isSignedIn() && resourceData.owner == request.auth.uid;
+    }
+    
+    // Admin has full access to everything
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Properties collection
+    match /properties/{propertyId} {
+      // Anyone can read properties
+      allow read: if true;
+      
+      // Only signed-in users can create properties
+      allow create: if isSignedIn();
+      
+      // Only owner or admin can update/delete
+      allow update, delete: if isOwner(resource.data) || isAdmin();
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      // Users can read their own data, admins can read all
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      
+      // Anyone signed in can create a user document
+      allow create: if isSignedIn();
+      
+      // Only the user or admin can update
+      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      
+      // Only admin can delete
+      allow delete: if isAdmin();
+    }
+    
+    // Interests collection
+    match /interests/{interestId} {
+      // Users can read interests they created or for properties they own
+      allow read: if isSignedIn() && 
+                 (resource.data.userId == request.auth.uid || 
+                  isOwner(get(/databases/$(database)/documents/properties/$(resource.data.propertyId)).data) || 
+                  isAdmin());
+      
+      // Signed-in users can create interests
+      allow create: if isSignedIn();
+      
+      // Only the creator or admin can update/delete
+      allow update, delete: if isSignedIn() && 
+                           (resource.data.userId == request.auth.uid || isAdmin());
+    }
+    
+    // Settings collection
+    match /settings/{settingId} {
+      // Anyone can read settings
+      allow read: if true;
+      
+      // Only admin can write settings
+      allow write: if isAdmin();
+    }
+    
+    // Messages collection
+    match /messages/{messageId} {
+      // Anyone can create messages (contact form)
+      allow create: if true;
+      
+      // Only admin can read/update/delete
+      allow read, update, delete: if isAdmin();
+    }
+  }
+}
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      // Anyone can read storage files
+      allow read: if true;
+      
+      // Only signed-in users can write
+      allow write: if request.auth != null;
+    }
+  }
+}
+
