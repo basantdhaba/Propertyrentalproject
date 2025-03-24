@@ -1,89 +1,74 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Welcome to Firebase Hosting</title>
+const functions = require("firebase-functions")
+const admin = require("firebase-admin")
+admin.initializeApp()
 
-    <!-- update the version number as needed -->
-    <script defer src="/__/firebase/11.5.0/firebase-app-compat.js"></script>
-    <!-- include only the Firebase features as you need -->
-    <script defer src="/__/firebase/11.5.0/firebase-auth-compat.js"></script>
-    <script defer src="/__/firebase/11.5.0/firebase-database-compat.js"></script>
-    <script defer src="/__/firebase/11.5.0/firebase-firestore-compat.js"></script>
-    <script defer src="/__/firebase/11.5.0/firebase-functions-compat.js"></script>
-    <script defer src="/__/firebase/11.5.0/firebase-messaging-compat.js"></script>
-    <script defer src="/__/firebase/11.5.0/firebase-storage-compat.js"></script>
-    <script defer src="/__/firebase/11.5.0/firebase-analytics-compat.js"></script>
-    <script defer src="/__/firebase/11.5.0/firebase-remote-config-compat.js"></script>
-    <script defer src="/__/firebase/11.5.0/firebase-performance-compat.js"></script>
-    <!-- 
-      initialize the SDK after all desired features are loaded, set useEmulator to false
-      to avoid connecting the SDK to running emulators.
-    -->
-    <script defer src="/__/firebase/init.js?useEmulator=true"></script>
+// Function to set admin role
+exports.setAdminRole = functions.https.onCall(async (data, context) => {
+  // Check if the request is made by an admin
+  if (!context.auth) {
+    throw new functions.https.HttpsError("unauthenticated", "You must be logged in to perform this action")
+  }
 
-    <style media="screen">
-      body { background: #ECEFF1; color: rgba(0,0,0,0.87); font-family: Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
-      #message { background: white; max-width: 360px; margin: 100px auto 16px; padding: 32px 24px; border-radius: 3px; }
-      #message h2 { color: #ffa100; font-weight: bold; font-size: 16px; margin: 0 0 8px; }
-      #message h1 { font-size: 22px; font-weight: 300; color: rgba(0,0,0,0.6); margin: 0 0 16px;}
-      #message p { line-height: 140%; margin: 16px 0 24px; font-size: 14px; }
-      #message a { display: block; text-align: center; background: #039be5; text-transform: uppercase; text-decoration: none; color: white; padding: 16px; border-radius: 4px; }
-      #message, #message a { box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); }
-      #load { color: rgba(0,0,0,0.4); text-align: center; font-size: 13px; }
-      @media (max-width: 600px) {
-        body, #message { margin-top: 0; background: white; box-shadow: none; }
-        body { border-top: 16px solid #ffa100; }
-      }
-    </style>
-  </head>
-  <body>
-    <div id="message">
-      <h2>Welcome</h2>
-      <h1>Firebase Hosting Setup Complete</h1>
-      <p>You're seeing this because you've successfully setup Firebase Hosting. Now it's time to go build something extraordinary!</p>
-      <a target="_blank" href="https://firebase.google.com/docs/hosting/">Open Hosting Documentation</a>
-    </div>
-    <p id="load">Firebase SDK Loading&hellip;</p>
+  // Get the current user's custom claims
+  const callerUid = context.auth.uid
+  const callerUser = await admin.auth().getUser(callerUid)
+  const callerCustomClaims = callerUser.customClaims || {}
 
-    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        const loadEl = document.querySelector('#load');
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-        // // The Firebase SDK is initialized and available here!
-        //
-        // firebase.auth().onAuthStateChanged(user => { });
-        // firebase.database().ref('/path/to/ref').on('value', snapshot => { });
-        // firebase.firestore().doc('/foo/bar').get().then(() => { });
-        // firebase.functions().httpsCallable('yourFunction')().then(() => { });
-        // firebase.messaging().requestPermission().then(() => { });
-        // firebase.storage().ref('/path/to/ref').getDownloadURL().then(() => { });
-        // firebase.analytics(); // call to activate
-        // firebase.analytics().logEvent('tutorial_completed');
-        // firebase.performance(); // call to activate
-        //
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
+  // Check if the caller is an admin
+  if (!callerCustomClaims.admin) {
+    throw new functions.https.HttpsError("permission-denied", "Only admins can assign admin roles")
+  }
 
-        try {
-          let app = firebase.app();
-          let features = [
-            'auth', 
-            'database', 
-            'firestore',
-            'functions',
-            'messaging', 
-            'storage', 
-            'analytics', 
-            'remoteConfig',
-            'performance',
-          ].filter(feature => typeof app[feature] === 'function');
-          loadEl.textContent = `Firebase SDK loaded with ${features.join(', ')}`;
-        } catch (e) {
-          console.error(e);
-          loadEl.textContent = 'Error loading the Firebase SDK, check the console.';
-        }
-      });
-    </script>
-  </body>
-</html>
+  // Get the email of the user to be made admin
+  const { email } = data
+  if (!email) {
+    throw new functions.https.HttpsError("invalid-argument", "Email is required")
+  }
+
+  try {
+    // Get the user by email
+    const userRecord = await admin.auth().getUserByEmail(email)
+
+    // Set custom claims for the user
+    await admin.auth().setCustomUserClaims(userRecord.uid, { admin: true })
+
+    // Update the user document in Firestore
+    await admin.firestore().collection("users").doc(userRecord.uid).update({
+      role: "admin",
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    })
+
+    return { success: true, message: `Successfully set admin role for ${email}` }
+  } catch (error) {
+    throw new functions.https.HttpsError("internal", error.message)
+  }
+})
+
+// Function to check and set initial admin
+exports.checkAndSetInitialAdmin = functions.auth.user().onCreate(async (user) => {
+  // Check if the user's email is the designated admin email
+  if (user.email === "renteasekol@gmail.com") {
+    try {
+      // Set custom claims for the initial admin
+      await admin.auth().setCustomUserClaims(user.uid, { admin: true })
+
+      // Update or create the user document in Firestore
+      await admin.firestore().collection("users").doc(user.uid).set(
+        {
+          email: user.email,
+          role: "admin",
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      )
+
+      console.log(`Set admin role for initial admin: ${user.email}`)
+      return { success: true }
+    } catch (error) {
+      console.error("Error setting admin role:", error)
+      return { success: false, error: error.message }
+    }
+  }
+  return null
+})
